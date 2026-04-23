@@ -1,3 +1,139 @@
+# Smart Campus REST API (JAX-RS / Jersey)
+
+## Overview (API design)
+
+This project is a small RESTful API for managing **rooms**, **sensors**, and **sensor readings** in a smart-campus scenario.
+
+- **Tech stack**: Java 17, JAX-RS (Jersey 3.x), embedded Grizzly HTTP server, JSON via Jackson.
+- **Base URL**: `http://localhost:8080/api/v1`
+- **Discovery / entry point (hypermedia)**: `GET /api/v1` returns a JSON document with top-level collection links.
+- **In-memory persistence**: all data lives in a shared `InMemoryStore` singleton for the lifetime of the process.
+- **Error handling**: domain exceptions are mapped to structured JSON (`ApiError`) with appropriate HTTP status codes (e.g., `409`, `422`, `500`).
+
+### Resource model
+
+- **Rooms** (`/rooms`)
+	- `GET /rooms` — list rooms
+	- `POST /rooms` — create room
+	- `GET /rooms/{roomId}` — fetch a room
+	- `DELETE /rooms/{roomId}` — delete a room (blocked with `409` if it has ACTIVE sensors)
+- **Sensors** (`/sensors`)
+	- `GET /sensors` — list sensors
+	- `GET /sensors?type=CO2` — filter sensors by type
+	- `POST /sensors` — create sensor (requires an existing `roomId`, otherwise `422`)
+- **Sensor readings** (sub-resource locator)
+	- `GET /sensors/{sensorId}/readings` — list readings for a sensor
+	- `POST /sensors/{sensorId}/readings` — append a reading (auto-generates `id` and `timestamp` if omitted)
+
+## Build and run (step-by-step)
+
+### Prerequisites
+
+1. Install **JDK 17**.
+2. Install **Apache Maven**.
+3. From the repo root, verify versions:
+
+```bash
+java -version
+mvn -v
+```
+
+### Build
+
+1. From the repo root, run:
+
+```bash
+mvn clean test
+```
+
+2. Create a runnable shaded JAR:
+
+```bash
+mvn clean package
+```
+
+This produces `target/smart-campus-api-1.0.0-SNAPSHOT-all.jar`.
+
+### Run the server
+
+Option A (recommended during development):
+
+```bash
+mvn exec:java
+```
+
+Option B (run the packaged JAR):
+
+```bash
+java -jar target/smart-campus-api-1.0.0-SNAPSHOT-all.jar
+```
+
+The server listens on port **8080** and prints:
+
+```
+Smart Campus API started: http://0.0.0.0:8080/api/v1
+```
+
+## Sample curl commands (successful)
+
+All examples assume the server is running locally and use `http://localhost:8080/api/v1`.
+If you are using **PowerShell**, you may need to run `curl.exe` (because `curl` can be an alias for `Invoke-WebRequest`).
+
+1) Discovery entry point:
+
+```bash
+curl http://localhost:8080/api/v1
+```
+
+2) Create a room:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/rooms -H "Content-Type: application/json" -d '{"id":"R1","name":"Lab 1","capacity":30,"regulations":"No food"}'
+```
+
+3) List rooms:
+
+```bash
+curl http://localhost:8080/api/v1/rooms
+```
+
+4) Create a sensor (linked to `R1`):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/sensors -H "Content-Type: application/json" -d '{"id":"S1","type":"CO2","roomId":"R1"}'
+```
+
+5) List sensors (and filter by type):
+
+```bash
+curl http://localhost:8080/api/v1/sensors
+curl "http://localhost:8080/api/v1/sensors?type=CO2"
+```
+
+6) Append a sensor reading (id + timestamp are optional):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/sensors/S1/readings -H "Content-Type: application/json" -d '{"value":412.5}'
+```
+
+7) List readings for a sensor:
+
+```bash
+curl http://localhost:8080/api/v1/sensors/S1/readings
+```
+
+8) Create and then delete an empty room (demonstrates `DELETE`):
+
+```bash
+curl -X POST http://localhost:8080/api/v1/rooms -H "Content-Type: application/json" -d '{"id":"R2","name":"Meeting Room","capacity":8}'
+
+curl -i -X DELETE http://localhost:8080/api/v1/rooms/R2
+```
+
+---
+
+## Coursework report Q&A
+
 Question: In your report, explain the default lifecycle of a JAX-RS Resource class. Is a
 new instance instantiated for every incoming request, or does the runtime treat it as a
 singleton? Elaborate on how this architectural decision impacts the way you manage and
