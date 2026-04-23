@@ -5,6 +5,7 @@ import com.smartcampus.api.mappers.GlobalThrowableMapper;
 import com.smartcampus.api.mappers.LinkedResourceNotFoundExceptionMapper;
 import com.smartcampus.api.mappers.RoomNotEmptyExceptionMapper;
 import com.smartcampus.api.mappers.SensorUnavailableExceptionMapper;
+import com.smartcampus.api.resources.DebugResource;
 import com.smartcampus.api.resources.DiscoveryResource;
 import com.smartcampus.api.resources.SensorResource;
 import com.smartcampus.api.resources.SensorRoomResource;
@@ -27,6 +28,7 @@ public class SmartCampusApplication extends ResourceConfig {
         register(GlobalThrowableMapper.class);
 
         register(DiscoveryResource.class);
+        register(DebugResource.class);
         register(SensorRoomResource.class);
         register(SensorResource.class);
     }
